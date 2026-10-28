@@ -1,0 +1,6 @@
+node_modules/
+*.tgz
+.dsh-test/
+.dsh-meow/
+coverage/
+*.log

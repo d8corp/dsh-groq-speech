@@ -1,0 +1,7 @@
+# dsh-groq-speech profile patch layer.
+# Registers the Groq Whisper provider into the running speech service.
+# The official voice input bundle (`@deepseek-ai/dsh-experimental-voice-input-bundle`)
+# must be enabled: it provides ctx.speechToText and the microphone UI.
+- insert:
+    - id: groq-speech
+      name: 'dsh-groq-speech'
