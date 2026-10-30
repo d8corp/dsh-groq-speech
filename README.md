@@ -27,10 +27,13 @@ and a settings page that reuses the shared `GROQ_API_KEY` credential from
 
 ## Installation
 
-From a local checkout:
+The publishable package is generated into `release/` by `npm run build`. Install
+that directory (the repository root only contains sources and dev tooling):
 
 ```sh
-dsh plugin --profile web add file:/site/harness-plugins/dsh-groq-speech
+npm install
+npm run build
+dsh plugin --profile web add file:/site/dsh/dsh-groq-speech/release
 ```
 
 From npm:
@@ -39,10 +42,11 @@ From npm:
 dsh plugin --profile web add dsh-groq-speech
 ```
 
-From git:
+From git (build `release/` before installing, or publish from CI):
 
 ```sh
-dsh plugin --profile web add github:<owner>/dsh-groq-speech
+npm install && npm run build
+dsh plugin --profile web add file:/path/to/dsh-groq-speech/release
 ```
 
 Reload the Web GUI after installing. If the **Settings → Groq Speech** section
@@ -85,20 +89,29 @@ lost.
 ## Security
 
 - The Groq key lives in **DSH credentials** (reference `GROQ_API_KEY`) and is
-  configured in **Settings → Models**; `$DSH_HOME/groq-speech.json` never
-  contains it.
-- The browser receives only `{ configured }` plus the non-secret settings. The
-  key, its prefix and its length are never returned.
+  configured in **Settings → Models**; the plugin settings file never contains
+  it.
+- Settings are stored at `$DSH_HOME/dsh-groq-speech/groq-speech.json` (or
+  `~/.dsh/dsh-groq-speech/groq-speech.json`). A 0.1.0 file at
+  `$DSH_HOME/groq-speech.json` is read as a one-time fallback and is never
+  modified.
+- The browser receives only `{ configured, source, writable }` plus the
+  non-secret settings. The key, its prefix and its length are never returned.
 - The plugin has no API actions to set or clear the key: the Groq Speech page
   shows a **Configured** / **Not configured** badge and links to Models.
 - The `GROQ_API_KEY` environment variable is a read-only fallback; a stored key
   takes priority.
-- `groq-speech.json` is written atomically (temporary file + rename) with mode
-  `0600`.
+- The settings file is written atomically (temporary file + rename) with mode
+  `0600`, and every browser API request is fenced to loopback / trusted hosts,
+  same-origin and a live DSH browser session (when the `connection` service is
+  available).
 - Audio is sent to Groq (`api.groq.com`). With polishing enabled, the transcript
   is sent to the selected DSH provider. No other network requests are made.
 - Groq errors are surfaced as fixed messages; response bodies and keys are never
   included.
+- Removing the bundle from the profile manifest lets the host delete the plugin
+  data directory after a short confirmation window; disabling or reloading the
+  plugin never deletes settings.
 
 ## The provider in the UI
 
@@ -125,25 +138,54 @@ npm test
 ```
 
 The suite is fully offline: no real keys are needed, Groq is never contacted,
-and a local `http` server imitates the API. The tests do not load DSH.
+and a local `http` server imitates the API. Tests run with Jest and ts-jest; the
+`@deepseek-ai/dsh-llm` peer is mapped to a tiny local fixture. The tests do not
+load DSH.
+
+## Build
+
+```sh
+npm run build        # theme → client bundle → release/
+npm run build:client # only client/client.js
+npm test             # Jest
+npm run lint         # ESLint over src/
+```
+
+`npm run build` writes:
+
+- `client/client.js` — the browser half loaded by the shell's ModuleLoader;
+- `release/` — the publishable package (`index.mjs`, host modules, types,
+  `cordis.patch.yml` and the client bundle).
 
 ## Layout
 
 ```
 dsh-groq-speech/
-├── package.json          plugin manifest
+├── package.json          plugin manifest and build scripts
 ├── cordis.patch.yml      adds the plugin to the web profile
-├── lib/
-│   ├── constants.js      shared constants
-│   ├── settings.js       settings read, validation and atomic writes
-│   ├── fence.js          same-origin guard and JSON responses
-│   ├── groq.js           Groq multipart request and error mapping
-│   ├── polish.js         optional LLM polishing with fallback
-│   ├── provider.js       the `groq-whisper` SpeechProvider
-│   ├── api.js            browser JSON API
-│   ├── index.js          plugin entry
-│   └── client.js         Settings → Groq Speech section
-├── test/                 offline tests (node:test)
+├── theme.scss            settings-section styles (inlined at build time)
+├── buildEnv.ts           compiles theme.scss into .env.theme
+├── scripts/
+│   └── buildClient.mjs   builds client/client.js with this plugin's CSS
+├── src/
+│   ├── constants.ts      shared constants
+│   ├── contracts.ts      host/UI type shapes
+│   ├── atomicFile.ts     atomic 0600 writes
+│   ├── settings.ts       settings read, validation and persistence
+│   ├── fence.ts          same-origin guard and JSON responses
+│   ├── groq.ts           Groq multipart request and error mapping
+│   ├── polish.ts         optional LLM polishing with fallback
+│   ├── provider.ts       the `groq-whisper` SpeechProvider
+│   ├── api.ts            browser JSON API
+│   ├── uninstall.ts      post-uninstall data cleanup
+│   ├── index.ts          host plugin entry
+│   ├── client.ts         ModuleLoader registration
+│   ├── components/       Settings → Groq Speech React section
+│   ├── ui/               small React controls
+│   └── utils/            API client, styling and form helpers
+├── test/                 offline Jest suites and helpers
+├── client/client.js      generated browser bundle
+├── release/              generated publishable package
 ├── README.md
 └── LICENSE
 ```

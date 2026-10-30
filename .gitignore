@@ -1,4 +1,6 @@
-node_modules/
+node_modules
+lib
+.idea
 *.tgz
 .dsh-test/
 .dsh-meow/
