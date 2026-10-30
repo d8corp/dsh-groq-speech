@@ -1,5 +1,3 @@
-import { getReact } from '../../utils'
-
 export interface TextareaProps {
   id?: string
   value: string
@@ -17,17 +15,17 @@ export interface TextareaProps {
  * @returns the textarea element.
  */
 export function Textarea ({ id, value, placeholder, rows = 4, maxLength, disabled, onChange }: TextareaProps) {
-  const React = getReact()
-
-  return React.createElement('textarea', {
-    id,
-    className: 'gqs-textarea',
-    value,
-    placeholder,
-    rows,
-    maxLength,
-    disabled,
-    spellCheck: true,
-    onChange: (event: { target: { value: string } }) => onChange(event.target.value),
-  })
+  return (
+    <textarea
+      id={id}
+      className='gqs-textarea'
+      value={value}
+      placeholder={placeholder}
+      rows={rows}
+      maxLength={maxLength}
+      disabled={disabled}
+      spellCheck
+      onChange={(event: { target: { value: string } }) => onChange(event.target.value)}
+    />
+  )
 }

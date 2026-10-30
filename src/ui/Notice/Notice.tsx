@@ -1,5 +1,3 @@
-import { getReact } from '../../utils'
-
 export interface NoticeProps {
   kind: 'error' | 'success'
   text: string
@@ -12,16 +10,13 @@ export interface NoticeProps {
  * @returns the notice element.
  */
 export function Notice ({ kind, text }: NoticeProps) {
-  const React = getReact()
-
-  return React.createElement(
-    'p',
-    {
-      className: 'gqs-notice gqs-notice-' + kind,
-      role: kind === 'error' ? 'alert' : 'status',
-      'aria-live': 'polite',
-      style: { marginTop: '16px' },
-    },
-    text,
+  return (
+    <p
+      className={'gqs-notice gqs-notice-' + kind}
+      role={kind === 'error' ? 'alert' : 'status'}
+      aria-live='polite'
+      style={{ marginTop: '16px' }}
+      children={text}
+    />
   )
 }

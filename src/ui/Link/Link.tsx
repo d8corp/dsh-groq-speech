@@ -1,7 +1,5 @@
 import type * as ReactTypes from 'react'
 
-import { getReact } from '../../utils'
-
 export interface LinkProps {
   href?: string
   onClick?: (event: ReactTypes.MouseEvent<HTMLAnchorElement>) => void
@@ -15,15 +13,5 @@ export interface LinkProps {
  * @returns the anchor element.
  */
 export function Link ({ href = '#', onClick, children }: LinkProps) {
-  const React = getReact()
-
-  return React.createElement(
-    'a',
-    {
-      href,
-      className: 'gqs-link',
-      onClick,
-    },
-    children,
-  )
+  return <a children={children} href={href} className='gqs-link' onClick={onClick} />
 }

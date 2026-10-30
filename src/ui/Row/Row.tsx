@@ -1,7 +1,5 @@
 import type * as ReactTypes from 'react'
 
-import { getReact } from '../../utils'
-
 export interface RowProps {
   title: string
   description?: string
@@ -21,21 +19,20 @@ export interface RowProps {
  * @returns the row element.
  */
 export function Row ({ title, description, control, badge, prompt, htmlFor }: RowProps) {
-  const React = getReact()
-
   const titleNode = htmlFor
-    ? React.createElement('label', { className: 'gqs-title', htmlFor }, title)
-    : React.createElement('span', { className: 'gqs-title' }, title)
+    ? <label className='gqs-title' htmlFor={htmlFor} children={title} />
+    : <span className='gqs-title' children={title} />
 
-  return React.createElement(
-    'div',
-    { className: prompt ? 'gqs-row gqs-row-prompt' : 'gqs-row' },
-    React.createElement(
-      'div',
-      { className: 'gqs-text' },
-      React.createElement('div', { className: 'gqs-titleRow' }, titleNode, badge || null),
-      description ? React.createElement('div', { className: 'gqs-desc' }, description) : null,
-    ),
-    prompt ? control : React.createElement('div', { className: 'gqs-control' }, control),
+  return (
+    <div className={prompt ? 'gqs-row gqs-row-prompt' : 'gqs-row'}>
+      <div className='gqs-text'>
+        <div className='gqs-titleRow'>
+          {titleNode}
+          {badge || null}
+        </div>
+        {description ? <div className='gqs-desc' children={description} /> : null}
+      </div>
+      {prompt ? control : <div className='gqs-control' children={control} />}
+    </div>
   )
 }

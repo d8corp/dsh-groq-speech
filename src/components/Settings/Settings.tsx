@@ -1,4 +1,5 @@
 import type * as ReactTypes from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import {
   DEFAULT_POLISH_PROMPT,
@@ -20,7 +21,6 @@ import {
   decodeModelValue,
   encodeModelValue,
   errorMessage,
-  getReact,
   languageLabel,
   normalizeModels,
   normalizeSettings,
@@ -61,8 +61,6 @@ export interface SettingsProps {
  * @returns the settings section.
  */
 export function Settings ({ openModels }: SettingsProps) {
-  const React = getReact()
-  const { useEffect, useRef, useState } = React
   const [phase, setPhase] = useState<Phase>('loading')
   const [loadError, setLoadError] = useState('')
   const [statusValue, setStatusValue] = useState<ClientStatus | null>(null)

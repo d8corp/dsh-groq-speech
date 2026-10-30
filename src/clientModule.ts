@@ -7,7 +7,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type * as ReactTypes from 'react'
 
 import { Settings } from './components'
-import { callApi, ensureStyles, setReact } from './utils'
+import { callApi, ensureStyles } from './utils'
 
 /** Plugin id used by the shell's module loader. */
 const PLUGIN_ID = 'dsh-groq-speech'
@@ -110,8 +110,7 @@ export function openModelsSection (ctx: NavigationContext): boolean {
  * @param require module resolver supplied by the shell.
  * @returns the client module with registration and test hooks.
  */
-export function createModule (require: (id: string) => typeof ReactTypes): ClientModule {
-  setReact(require('react'))
+export function createModule (): ClientModule {
   ensureStyles(PLUGIN_ID)
 
   /**
@@ -141,16 +140,4 @@ export function createModule (require: (id: string) => typeof ReactTypes): Clien
     openModelsSection,
     callApi,
   }
-}
-
-/**
- * Hand the plugin to the shell's module loader.
- *
- * @param loader the `window.__ModuleLoader__` instance.
- */
-export function registerClient (loader: DshModuleLoader): void {
-  loader.load({
-    id: PLUGIN_ID,
-    factory: createModule,
-  })
 }
