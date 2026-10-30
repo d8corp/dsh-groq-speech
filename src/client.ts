@@ -3,9 +3,18 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 
-import { openModelsSection } from './clientModule'
 import { Settings } from './components'
 import { ensureStyles } from './utils'
+
+const PLUGIN_ID = 'dsh-groq-speech'
+
+/** Settings section metadata registered into the shell. */
+const SECTION = {
+  name: 'settings.section',
+  id: 'groq-speech',
+  order: 30,
+  label: 'Groq Speech',
+} as const
 
 export const inject = ['slots']
 
@@ -27,15 +36,58 @@ interface NavigationContext {
   slots: Pick<SlotService, 'entries'>
 }
 
-const SECTION = {
-  name: 'settings.section',
-  id: 'groq-speech',
-  order: 30,
-  label: 'Groq Speech',
-} as const
+/**
+ * Activate the built-in Models section in the already-open settings panel.
+ *
+ * The shell does not expose a navigation callback to section components, so
+ * mirror its order and click the matching nav cell. The lookup is by slot id,
+ * never by a guessed URL or a localized label.
+ *
+ * @param ctx plugin context carrying the slot service.
+ * @returns true when the Models cell was found and clicked.
+ */
+function openModelsSection (ctx: NavigationContext): boolean {
+  if (typeof document === 'undefined') return false
 
+  const panel = document.querySelector('[data-shortcut-modal="settings"]')
+
+  if (panel === null) return false
+
+  let index = -1
+
+  try {
+    const rows = ctx.slots
+      .entries('settings.section')
+      .map((entry) => ({
+        id: entry && entry.options ? entry.options.id : '',
+        order: entry && entry.options && typeof entry.options.order === 'number'
+          ? entry.options.order
+          : 0,
+      }))
+      .sort((left, right) => left.order - right.order)
+
+    index = rows.findIndex((row) => row.id === 'models')
+  } catch {
+    index = -1
+  }
+
+  const buttons = panel.querySelectorAll('nav > div:last-child button')
+
+  if (index < 0 || !buttons[index]) return false
+
+  ;(buttons[index] as HTMLElement).click()
+
+  return true
+}
+
+/**
+ * Register the Settings → Groq Speech section. The shell owns navigation;
+ * slot lifecycle is handled by ctx.slots.inject.
+ *
+ * @param ctx plugin context carrying the slot service.
+ */
 export function apply (ctx: Context): void {
-  ensureStyles('dsh-groq-speech')
+  ensureStyles(PLUGIN_ID)
 
   const slots = (ctx as unknown as { slots: SlotService }).slots
 

@@ -6,3 +6,4 @@ lib
 .dsh-meow/
 coverage/
 *.log
+.qoder

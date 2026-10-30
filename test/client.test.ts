@@ -3,39 +3,30 @@
  */
 
 /**
- * Client module smoke test: the ModuleLoader envelope, the Models link and the
- * settings-section registration without a browser.
+ * Client module smoke test: the settings-section registration, the Models link
+ * and the source-level UX contract without a browser.
  *
- * The UI is plain React.createElement code, so the module can be built with a
- * fake React and a fake slot service.
+ * React is supplied by the DSH host at runtime, so the Node test environment
+ * maps `react` to an empty stub (see jest.config.js) and nothing is rendered.
  */
 
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { createModule, openModelsSection } from '../src/clientModule'
-
-const fakeReact = {
-  createElement: (type: unknown, props: unknown, ...children: unknown[]) => ({ type, props, children }),
-  useState: (initial: unknown) => [initial, () => {}],
-  useEffect: () => {},
-  useRef: (initial: unknown) => ({ current: initial }),
-}
+import { apply, inject } from '../src/client'
+import { Settings } from '../src/components'
 
 const root = join(__dirname, '..')
 const settingsSource = readFileSync(join(root, 'src/components/Settings/Settings.tsx'), 'utf8')
-const clientSource = readFileSync(join(root, 'src/clientModule.ts'), 'utf8')
-
-const loadClient = () => createModule(() => fakeReact as any)
+const clientSource = readFileSync(join(root, 'src/client.ts'), 'utf8')
 
 test('client module registers one settings section with the documented metadata', () => {
-  const client = loadClient()
-
-  assert.equal(client.inject.includes('slots'), true)
+  assert.equal(inject.includes('slots'), true)
 
   const injected: string[] = []
   const registrations: Array<{ meta: any, component: unknown }> = []
+
   const ctx = {
     slots: {
       inject (name: string, register: () => void) {
@@ -50,12 +41,12 @@ test('client module registers one settings section with the documented metadata'
     },
   }
 
-  client.apply(ctx as any)
+  apply(ctx as any)
 
   assert.deepEqual(injected, ['settings.section'])
   assert.equal(registrations.length, 1)
 
-  const { inject, ...meta } = registrations[0].meta
+  const { inject: slotInject, ...meta } = registrations[0].meta
 
   assert.deepEqual(meta, {
     name: 'settings.section',
@@ -63,9 +54,10 @@ test('client module registers one settings section with the documented metadata'
     order: 30,
     label: 'Groq Speech',
   })
-  assert.equal(typeof inject, 'function')
-  assert.equal(typeof inject().openModels, 'function')
-  assert.equal(registrations[0].component, client.GroqSpeechSection)
+
+  assert.equal(typeof slotInject, 'function')
+  assert.equal(typeof slotInject().openModels, 'function')
+  assert.equal(registrations[0].component, Settings)
 })
 
 test('the section has no key input and links to Settings → Models', () => {
@@ -84,6 +76,7 @@ test('the section has no key input and links to Settings → Models', () => {
 test('the Models link clicks the nav cell whose slot id is models', () => {
   const clicked: string[] = []
   const originalDocument = (globalThis as any).document
+
   const panel = {
     querySelectorAll (selector: string) {
       assert.equal(selector, 'nav > div:last-child button')
@@ -105,8 +98,19 @@ test('the Models link clicks the nav cell whose slot id is models', () => {
   }
 
   try {
+    let section: { inject: () => { openModels: () => boolean } } | undefined
+
     const ctx = {
       slots: {
+        inject (name: string, register: () => void) {
+          assert.equal(name, 'settings.section')
+          register()
+        },
+        register (meta: any) {
+          section = meta
+
+          return () => {}
+        },
         entries (name: string) {
           assert.equal(name, 'settings.section')
 
@@ -119,7 +123,9 @@ test('the Models link clicks the nav cell whose slot id is models', () => {
       },
     }
 
-    assert.equal(openModelsSection(ctx), true)
+    apply(ctx as any)
+
+    assert.equal(section!.inject().openModels(), true)
     assert.deepEqual(clicked, ['models'])
   } finally {
     ;(globalThis as any).document = originalDocument

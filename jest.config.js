@@ -8,6 +8,8 @@ export default {
     '^@/(.*)$': '<rootDir>/src/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
     '^@deepseek-ai/dsh-llm$': '<rootDir>/test/fixtures/dsh-llm-stub.ts',
+    '^react$': '<rootDir>/test/fixtures/react-stub.ts',
+    '^react/jsx-runtime$': '<rootDir>/test/fixtures/react-stub.ts',
   },
   transform: {
     '^.+\\.tsx?$': [
