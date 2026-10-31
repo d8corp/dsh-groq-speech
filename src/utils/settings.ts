@@ -1,5 +1,5 @@
 import { DEFAULT_MODEL, KEY_REF } from '../constants'
-import type { ClientStatus, GroqSpeechSettings, KeySource } from '../contracts'
+import type { ClientStatus, GroqSpeechSettings, KeySource, VoiceInputStatus } from '../contracts'
 
 function isPlainObject (value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -7,6 +7,30 @@ function isPlainObject (value: unknown): value is Record<string, unknown> {
 
 function normalizeSource (value: unknown): KeySource | null {
   return value === 'stored' || value === 'env' ? value : null
+}
+
+/**
+ * Normalize the official voice-input selection.
+ *
+ * @param value raw host response.
+ * @returns a safe selection document; unavailable by default.
+ */
+export function normalizeVoice (value: unknown): VoiceInputStatus {
+  const source = isPlainObject(value) ? value : {}
+
+  const providerId = typeof source.providerId === 'string' && source.providerId !== ''
+    ? source.providerId
+    : null
+
+  return {
+    available: source.available === true,
+    selectable: source.selectable === true,
+    providerId,
+    providerName: typeof source.providerName === 'string' && source.providerName !== ''
+      ? source.providerName
+      : providerId,
+    selected: source.selected === true,
+  }
 }
 
 /**
@@ -25,6 +49,7 @@ export function normalizeStatus (value: unknown): ClientStatus {
     writable: source.writable !== false,
     envVar: typeof source.envVar === 'string' && source.envVar ? source.envVar : KEY_REF,
     settings,
+    voice: normalizeVoice(source.voice),
   }
 }
 

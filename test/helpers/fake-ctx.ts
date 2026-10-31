@@ -27,6 +27,7 @@ export interface FakeCalls {
   set: Array<{ ref: unknown, value: string }>
   unset: unknown[]
   providers: SpeechProvider[]
+  selections: string[]
   routes: FakeRoute[]
   warnings: string[]
 }
@@ -40,6 +41,10 @@ export interface FakeCtxOptions {
   credentials?: boolean
   /** Override the LLM service. */
   llm?: unknown
+  /** Provider id the fake speech service reports as selected. */
+  selectedProvider?: string
+  /** Override the speech service; `null` omits it. */
+  speech?: unknown
   /** `webStartup.trustedHosts`. */
   trustedHosts?: string[]
   /** Set to `false` to skip executing effect bodies. */
@@ -69,6 +74,7 @@ export function createFakeCtx (options: FakeCtxOptions = {}): FakeCtx {
     set: [],
     unset: [],
     providers: [],
+    selections: [],
     routes: [],
     warnings: [],
   }
@@ -113,15 +119,59 @@ export function createFakeCtx (options: FakeCtxOptions = {}): FakeCtx {
       }
     : options.llm
 
-  const speechToText = {
-    register (provider: SpeechProvider) {
-      calls.providers.push(provider)
-
-      return () => {
-        calls.providers.splice(calls.providers.indexOf(provider), 1)
-      }
+  const providerCatalog = [
+    {
+      id: 'sensevoice-local',
+      name: 'SenseVoiceSmall',
+      location: 'host-local',
+      languages: ['auto', 'ru', 'en'],
+      preparation: { phase: 'ready' },
     },
-  }
+    {
+      id: 'groq-whisper',
+      name: 'Groq Whisper',
+      location: 'cloud',
+      languages: ['auto'],
+      preparation: { phase: 'ready' },
+    },
+  ]
+
+  let selectedProvider = typeof options.selectedProvider === 'string' && options.selectedProvider !== ''
+    ? options.selectedProvider
+    : 'sensevoice-local'
+
+  const speechToText = options.speech === null
+    ? undefined
+    : options.speech !== undefined
+      ? options.speech
+      : {
+          register (provider: SpeechProvider) {
+            calls.providers.push(provider)
+
+            return () => {
+              calls.providers.splice(calls.providers.indexOf(provider), 1)
+            }
+          },
+          snapshot () {
+            return {
+              providers: providerCatalog.map((provider) => ({ ...provider })),
+              selection: { providerId: selectedProvider, language: 'auto' },
+            }
+          },
+          async configure (patch: { providerId?: string }) {
+            const providerId = patch !== null && typeof patch === 'object' && typeof patch.providerId === 'string'
+              ? patch.providerId
+              : ''
+
+            calls.selections.push(providerId)
+
+            if (!providerCatalog.some((provider) => provider.id === providerId)) {
+              throw new Error(`Speech provider is unavailable: ${providerId}`)
+            }
+
+            selectedProvider = providerId
+          },
+        }
 
   const webServer = {
     register (route: FakeRoute) {

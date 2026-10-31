@@ -2,6 +2,7 @@ import { KEY_REF, MAX_BODY_BYTES } from "./constants.mjs";
 import { PAYLOAD_TOO_LARGE, isLoopbackRequest, isTrustedApiRequest, readJsonBody, safeErrorMessage, writeError, writeJson } from "./fence.mjs";
 import { describeGroqKey } from "./provider.mjs";
 import { mergeSettings, normalizeSettings, readSettings, writeSettings } from "./settings.mjs";
+import { canSelectVoiceProvider, readVoiceInputStatus, selectGroqProvider } from "./voiceInput.mjs";
 // src/api.ts
 /**
 * A browser-facing failure with an HTTP status and stable code.
@@ -86,8 +87,19 @@ async function dispatchAction(ctx, payload, options = {}) {
 			source: key.source,
 			writable: key.writable,
 			envVar: KEY_REF,
-			settings: readSettings()
+			settings: readSettings(),
+			voice: readVoiceInputStatus(ctx)
 		});
+	}
+	if (action === "select-provider") {
+		if (!canSelectVoiceProvider(ctx)) throw new ApiFailure(409, "voice-unavailable", "Groq Whisper is not available in the voice-input picker");
+		let voice;
+		try {
+			voice = await selectGroqProvider(ctx);
+		} catch {
+			throw new ApiFailure(500, "voice-select-failed", "Could not select Groq Whisper for voice input");
+		}
+		return ok({ voice });
 	}
 	if (action === "get-settings") return ok({ settings: readSettings() });
 	if (action === "set-settings") {

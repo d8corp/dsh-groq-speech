@@ -98,6 +98,14 @@
   min-width: 0;
 }
 
+.gqs-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .gqs-link {
   color: var(--dsw-alias-link);
   font: inherit;
@@ -296,6 +304,11 @@
   .gqs-control {
     width: 100%;
     align-items: stretch;
+  }
+
+  .gqs-actions {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .gqs-selectWrap,

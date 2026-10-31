@@ -9,6 +9,9 @@ import { ensureStyles } from './utils'
 
 const PLUGIN_ID = 'dsh-groq-speech'
 
+/** Official bundle that owns the recognition-service settings. */
+const VOICE_INPUT_BUNDLE = '@deepseek-ai/dsh-experimental-voice-input-bundle'
+
 /** Settings section metadata registered into the shell. */
 const SECTION = {
   name: 'settings.section',
@@ -35,6 +38,71 @@ interface SlotService {
 
 interface NavigationContext {
   slots: Pick<SlotService, 'entries'>
+}
+
+interface PluginNavigation {
+  openBundle (key: string): unknown
+}
+
+function isPluginNavigation (value: unknown): value is PluginNavigation {
+  return value !== null && typeof value === 'object' &&
+    typeof (value as { openBundle?: unknown }).openBundle === 'function'
+}
+
+/**
+ * Resolve the optional plugin-navigation service without a hard dependency:
+ * profiles without the plugin manager simply get no navigation target.
+ *
+ * @param ctx plugin context.
+ * @returns the service, or undefined.
+ */
+function resolvePluginNavigation (ctx: unknown): PluginNavigation | undefined {
+  if (ctx === null || typeof ctx !== 'object') return undefined
+
+  try {
+    const direct = (ctx as { pluginNavigation?: unknown }).pluginNavigation
+
+    if (isPluginNavigation(direct)) return direct
+  } catch { /* unknown services throw on some context proxies */ }
+
+  let get: unknown
+
+  try {
+    get = (ctx as { get?: unknown }).get
+  } catch {
+    return undefined
+  }
+
+  if (typeof get !== 'function') return undefined
+
+  try {
+    const service = (get as (name: string) => unknown).call(ctx, 'pluginNavigation')
+
+    if (isPluginNavigation(service)) return service
+  } catch { /* service lookup can fail while the host boots */ }
+
+  return undefined
+}
+
+/**
+ * Open the official voice-input plugin details, where the recognition
+ * service and language are chosen.
+ *
+ * @param ctx plugin context.
+ * @returns true when the navigation call was made.
+ */
+function openVoiceInputSettings (ctx: unknown): boolean {
+  const navigation = resolvePluginNavigation(ctx)
+
+  if (navigation === undefined) return false
+
+  try {
+    navigation.openBundle(VOICE_INPUT_BUNDLE)
+
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -97,6 +165,7 @@ export function apply (ctx: Context): void {
       ...SECTION,
       inject: () => ({
         openModels: () => openModelsSection(ctx as unknown as NavigationContext),
+        openVoiceInput: () => openVoiceInputSettings(ctx),
       }),
     },
     Settings,

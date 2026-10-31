@@ -57,6 +57,7 @@ test('client module registers one settings section with the documented metadata'
 
   assert.equal(typeof slotInject, 'function')
   assert.equal(typeof slotInject().openModels, 'function')
+  assert.equal(typeof slotInject().openVoiceInput, 'function')
   assert.equal(registrations[0].component, Settings)
 })
 
@@ -137,4 +138,77 @@ test('settings autosave and no Save settings button', () => {
   assert.match(settingsSource, /scheduleSettingsSave/)
   assert.match(settingsSource, /set-settings/)
   assert.match(settingsSource, /MAX_PROMPT_CHARS/)
+})
+
+test('the section shows the voice-input selection and offers a switch', () => {
+  assert.match(settingsSource, /Voice input provider/)
+  assert.match(settingsSource, /Use Groq Whisper/)
+  assert.match(settingsSource, /Voice input settings/)
+  assert.match(settingsSource, /select-provider/)
+  assert.match(settingsSource, /Selected/)
+  assert.match(settingsSource, /Not selected/)
+  assert.match(settingsSource, /Not detected/)
+  assert.match(clientSource, /openBundle/)
+  assert.match(clientSource, /dsh-experimental-voice-input-bundle/)
+})
+
+test('the voice-input link opens the official plugin details', () => {
+  const opened: string[] = []
+  let section: { inject: () => { openVoiceInput: () => boolean } } | undefined
+
+  const ctx = {
+    slots: {
+      inject (name: string, register: () => void) {
+        assert.equal(name, 'settings.section')
+        register()
+      },
+      register (meta: any) {
+        section = meta
+
+        return () => {}
+      },
+      entries () {
+        return []
+      },
+    },
+    get (name: string) {
+      assert.equal(name, 'pluginNavigation')
+
+      return {
+        openBundle (key: string) {
+          opened.push(key)
+        },
+      }
+    },
+  }
+
+  apply(ctx as any)
+
+  assert.equal(section!.inject().openVoiceInput(), true)
+  assert.deepEqual(opened, ['@deepseek-ai/dsh-experimental-voice-input-bundle'])
+})
+
+test('the voice-input link reports failure without the navigation service', () => {
+  let section: { inject: () => { openVoiceInput: () => boolean } } | undefined
+
+  const ctx = {
+    slots: {
+      inject (name: string, register: () => void) {
+        assert.equal(name, 'settings.section')
+        register()
+      },
+      register (meta: any) {
+        section = meta
+
+        return () => {}
+      },
+      entries () {
+        return []
+      },
+    },
+  }
+
+  apply(ctx as any)
+
+  assert.equal(section!.inject().openVoiceInput(), false)
 })

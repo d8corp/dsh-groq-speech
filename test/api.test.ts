@@ -160,8 +160,127 @@ test('status reports defaults and never contains a key', async () => {
       writable: true,
       envVar: 'GROQ_API_KEY',
       settings: DEFAULT_SETTINGS,
+      voice: {
+        available: true,
+        selectable: true,
+        providerId: 'sensevoice-local',
+        providerName: 'SenseVoiceSmall',
+        selected: false,
+      },
     })
     assert.equal('key' in body.value, false)
+  })
+})
+
+test('status reports Groq Whisper when the official voice input selects it', async () => {
+  await withTempHome(async () => {
+    const { ctx } = createFakeCtx({ selectedProvider: 'groq-whisper' })
+    const { body } = await act(ctx, { action: 'status' })
+
+    assert.deepEqual(body.value.voice, {
+      available: true,
+      selectable: true,
+      providerId: 'groq-whisper',
+      providerName: 'Groq Whisper',
+      selected: true,
+    })
+  })
+})
+
+test('status reports voice input as unavailable when the speech service is missing', async () => {
+  await withTempHome(async () => {
+    const { ctx } = createFakeCtx({ speech: null })
+    const { status, body } = await act(ctx, { action: 'status' })
+
+    assert.equal(status, 200)
+    assert.deepEqual(body.value.voice, {
+      available: false,
+      selectable: false,
+      providerId: null,
+      providerName: null,
+      selected: false,
+    })
+  })
+})
+
+test('status reports voice input as unavailable when the snapshot throws', async () => {
+  await withTempHome(async () => {
+    const { ctx } = createFakeCtx({
+      speech: {
+        snapshot () {
+          throw new Error('speech service is booting')
+        },
+      },
+    })
+    const { body } = await act(ctx, { action: 'status' })
+
+    assert.equal(body.value.voice.available, false)
+    assert.equal(body.value.voice.selectable, false)
+  })
+})
+
+test('select-provider switches the voice input to Groq Whisper', async () => {
+  await withTempHome(async () => {
+    const fake = createFakeCtx({ key: SECRET })
+    const { status, body } = await act(fake.ctx, { action: 'select-provider' })
+
+    assert.equal(status, 200)
+    assert.deepEqual(fake.calls.selections, ['groq-whisper'])
+    assert.deepEqual(body.value.voice, {
+      available: true,
+      selectable: true,
+      providerId: 'groq-whisper',
+      providerName: 'Groq Whisper',
+      selected: true,
+    })
+    assert.equal(JSON.stringify(body).includes(SECRET), false)
+
+    const statusAfter = await act(fake.ctx, { action: 'status' })
+
+    assert.equal(statusAfter.body.value.voice.selected, true)
+  })
+})
+
+test('select-provider refuses when the official service cannot switch providers', async () => {
+  await withTempHome(async () => {
+    const fake = createFakeCtx({ speech: {} })
+
+    await expectApiFailure(
+      act(fake.ctx, { action: 'select-provider' }),
+      409,
+      'voice-unavailable',
+    )
+
+    assert.deepEqual(fake.calls.selections, [])
+  })
+})
+
+test('select-provider reports a fixed failure when the official configure throws', async () => {
+  await withTempHome(async () => {
+    const fake = createFakeCtx({
+      speech: {
+        snapshot () {
+          return {
+            providers: [
+              { id: 'sensevoice-local', name: 'SenseVoiceSmall' },
+              { id: 'groq-whisper', name: 'Groq Whisper' },
+            ],
+            selection: { providerId: 'sensevoice-local', language: 'auto' },
+          }
+        },
+        async configure () {
+          throw new Error('Speech selection requires the settings service and a profile entry')
+        },
+      },
+    })
+
+    const error = await act(fake.ctx, { action: 'select-provider' })
+      .then(() => null, (reason: unknown) => reason as Error & { status?: number, code?: string, message?: string })
+
+    assert.ok(error instanceof Error)
+    assert.equal(error.status, 500)
+    assert.equal(error.code, 'voice-select-failed')
+    assert.equal(error.message?.includes('settings service'), false)
   })
 })
 

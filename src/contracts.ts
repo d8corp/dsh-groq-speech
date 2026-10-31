@@ -37,16 +37,35 @@ export interface KeyStatus {
   writable: boolean
 }
 
+/**
+ * Voice-input provider selection as reported by the official speech service.
+ * The selection itself is owned by the official bundle and stored per profile.
+ */
+export interface VoiceInputStatus {
+  /** True when the official speech service returned a provider catalogue. */
+  available: boolean
+  /** True when this plugin can switch the selection to Groq Whisper. */
+  selectable: boolean
+  /** Currently selected provider id, or null when unknown. */
+  providerId: string | null
+  /** Display name of the selected provider, or null. */
+  providerName: string | null
+  /** True when Groq Whisper is the selected provider. */
+  selected: boolean
+}
+
 /** Response of the `status` action. Never carries key material. */
 export interface StatusPayload extends KeyStatus {
   envVar: string
   settings: GroqSpeechSettings
+  voice: VoiceInputStatus
 }
 
 /** Client-side view of {@link StatusPayload} before the form has loaded. */
 export interface ClientStatus extends KeyStatus {
   envVar: string
   settings: GroqSpeechSettings | null
+  voice: VoiceInputStatus
 }
 
 /** Response of the `get-settings` and `set-settings` actions. */

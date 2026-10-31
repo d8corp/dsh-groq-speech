@@ -10,7 +10,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 
 import { KEY_REF, MAX_BODY_BYTES } from './constants'
-import type { ModelRoute, StatusPayload } from './contracts'
+import type { ModelRoute, StatusPayload, VoiceInputStatus } from './contracts'
 import {
   isLoopbackRequest,
   isTrustedApiRequest,
@@ -22,6 +22,11 @@ import {
 } from './fence'
 import { describeGroqKey } from './provider'
 import { mergeSettings, normalizeSettings, readSettings, writeSettings } from './settings'
+import {
+  canSelectVoiceProvider,
+  readVoiceInputStatus,
+  selectGroqProvider,
+} from './voiceInput'
 
 /**
  * A browser-facing failure with an HTTP status and stable code.
@@ -161,9 +166,30 @@ export async function dispatchAction (
       writable: key.writable,
       envVar: KEY_REF,
       settings: readSettings(),
+      voice: readVoiceInputStatus(ctx),
     }
 
     return ok(value)
+  }
+
+  if (action === 'select-provider') {
+    if (!canSelectVoiceProvider(ctx)) {
+      throw new ApiFailure(
+        409,
+        'voice-unavailable',
+        'Groq Whisper is not available in the voice-input picker',
+      )
+    }
+
+    let voice: VoiceInputStatus
+
+    try {
+      voice = await selectGroqProvider(ctx)
+    } catch {
+      throw new ApiFailure(500, 'voice-select-failed', 'Could not select Groq Whisper for voice input')
+    }
+
+    return ok({ voice })
   }
 
   if (action === 'get-settings') {

@@ -7,7 +7,7 @@ import {
   MAX_PROMPT_CHARS,
   MODEL_OPTIONS,
 } from '../../constants'
-import type { ClientStatus, GroqSpeechSettings, ModelRoute } from '../../contracts'
+import type { ClientStatus, GroqSpeechSettings, ModelRoute, VoiceInputStatus } from '../../contracts'
 import { Button } from '../../ui/Button'
 import { Link } from '../../ui/Link'
 import { Notice } from '../../ui/Notice'
@@ -25,6 +25,7 @@ import {
   normalizeModels,
   normalizeSettings,
   normalizeStatus,
+  normalizeVoice,
   settingsSnapshot,
 } from '../../utils'
 
@@ -47,6 +48,10 @@ const ID = {
 export interface SettingsProps {
   /** Opens the built-in Models section; supplied by the slot injector. */
   openModels?: () => boolean
+  /** Opens the official voice-input plugin details; supplied by the injector. */
+  openVoiceInput?: () => boolean
+  /** Closes the settings panel; supplied by the shell. */
+  close?: () => void
 }
 
 /**
@@ -57,10 +62,10 @@ export interface SettingsProps {
  * after a short debounce, with writes serialized so a slow earlier request can
  * never overwrite a newer edit.
  *
- * @param props slot-injected navigation helper.
+ * @param props slot-injected navigation helpers and the shell close callback.
  * @returns the settings section.
  */
-export function Settings ({ openModels }: SettingsProps) {
+export function Settings ({ openModels, openVoiceInput, close }: SettingsProps) {
   const [phase, setPhase] = useState<Phase>('loading')
   const [loadError, setLoadError] = useState('')
   const [statusValue, setStatusValue] = useState<ClientStatus | null>(null)
@@ -69,6 +74,7 @@ export function Settings ({ openModels }: SettingsProps) {
   const [modelsError, setModelsError] = useState('')
   const [modelsLoading, setModelsLoading] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
+  const [selectingVoice, setSelectingVoice] = useState(false)
   const [notice, setNotice] = useState<FormNotice | null>(null)
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const saveInFlightRef = useRef(false)
@@ -305,6 +311,7 @@ export function Settings ({ openModels }: SettingsProps) {
 
   const configured = statusValue !== null && statusValue.configured
   const envVar = statusValue !== null ? statusValue.envVar : 'GROQ_API_KEY'
+  const voice: VoiceInputStatus = statusValue !== null ? statusValue.voice : normalizeVoice(null)
 
   /**
    * Explain where the shared key lives; never renders key material.
@@ -334,6 +341,84 @@ export function Settings ({ openModels }: SettingsProps) {
     setNotice({
       kind: 'error',
       text: 'Open Settings → Models from the settings sidebar to manage the key.',
+    })
+  }
+
+  /**
+   * Explain which recognition service the microphone currently uses.
+   *
+   * @returns the row description.
+   */
+  function voiceDescription (): string {
+    if (!voice.available) {
+      return 'The official voice-input bundle is not available in this profile, so Groq Whisper cannot be selected. Enable it and reload DSH.'
+    }
+
+    if (voice.selected) {
+      return 'Groq Whisper is the recognition service for the microphone. No local model download is required.'
+    }
+
+    if (voice.providerName !== null) {
+      return 'The microphone currently uses ' + voice.providerName +
+        '. Switch to Groq Whisper to transcribe through the Groq API instead.'
+    }
+
+    return 'Choose Groq Whisper to transcribe through the Groq API instead of a local model.'
+  }
+
+  /**
+   * Ask the host to make Groq Whisper the selected voice-input provider.
+   */
+  async function selectVoiceProvider (): Promise<void> {
+    setSelectingVoice(true)
+
+    try {
+      const value = await callApi('select-provider')
+
+      const nextVoice = normalizeVoice(
+        value !== null && typeof value === 'object'
+          ? (value as { voice?: unknown }).voice
+          : undefined,
+      )
+
+      if (!mountedRef.current) return
+
+      setStatusValue((current) => current === null ? current : { ...current, voice: nextVoice })
+
+      if (nextVoice.selected) {
+        setNotice({ kind: 'saved', text: 'Groq Whisper is now the voice-input provider.' })
+      } else {
+        setNotice({
+          kind: 'error',
+          text: 'The voice-input provider did not change. Choose Groq Whisper under Recognition service in Voice input settings.',
+        })
+      }
+    } catch (error) {
+      if (mountedRef.current) {
+        setNotice({ kind: 'error', text: errorMessage(error, 'Could not select Groq Whisper for voice input.') })
+      }
+    } finally {
+      if (mountedRef.current) setSelectingVoice(false)
+    }
+  }
+
+  /**
+   * Open the official voice-input settings and close this panel.
+   *
+   * @param event click event.
+   */
+  function handleVoiceLink (event: ReactTypes.MouseEvent<HTMLAnchorElement>): void {
+    event.preventDefault()
+
+    if (typeof openVoiceInput === 'function' && openVoiceInput()) {
+      if (typeof close === 'function') close()
+
+      return
+    }
+
+    setNotice({
+      kind: 'error',
+      text: 'Open the voice-input plugin from the Plugins page to change the recognition service.',
     })
   }
 
@@ -398,6 +483,7 @@ export function Settings ({ openModels }: SettingsProps) {
   const polishDisabled = modelsLoading || (models.length === 0 && !currentPolish)
   const footerText = savingSettings ? 'Saving…' : (notice !== null ? notice.text : '')
   const footerKind = notice !== null && notice.kind === 'error' ? 'error' : 'success'
+  const voiceLabel = !voice.available ? 'Not detected' : (voice.selected ? 'Selected' : 'Not selected')
 
   return (
     <div className='gqs-section'>
@@ -415,6 +501,36 @@ export function Settings ({ openModels }: SettingsProps) {
         )}
         description={keyDescription()}
         control={<Link onClick={handleModelsLink}>Settings → Models</Link>}
+      />
+      <Row
+        key='voice'
+        title='Voice input provider'
+        badge={(
+          <Status
+            state={voice.selected ? 'on' : 'off'}
+            label={voiceLabel}
+            hint={voice.selected
+              ? 'The microphone uses Groq Whisper for speech recognition.'
+              : voice.available
+                ? 'The official voice-input settings select a different recognition service.'
+                : 'The official voice-input service did not report a provider list.'}
+          />
+        )}
+        description={voiceDescription()}
+        control={voice.available
+          ? (
+            <div className='gqs-actions'>
+              {voice.selectable && !voice.selected
+                ? (
+                  <Button compact disabled={selectingVoice} onClick={() => { selectVoiceProvider() }}>
+                    {selectingVoice ? 'Selecting…' : 'Use Groq Whisper'}
+                  </Button>
+                  )
+                : null}
+              <Link onClick={handleVoiceLink}>Voice input settings</Link>
+            </div>
+            )
+          : null}
       />
       <Row
         key='model'

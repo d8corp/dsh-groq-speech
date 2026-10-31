@@ -14,6 +14,8 @@ and a settings page that reuses the shared `GROQ_API_KEY` credential from
   (**Settings → Models**) to fix punctuation and obvious recognition errors.
 - Uses the shared Groq key from **Settings → Models** and never sends it to the
   browser.
+- Reports the current voice-input provider and can switch it to Groq Whisper
+  from **Settings → Groq Speech**.
 
 ## Requirements
 
@@ -52,6 +54,13 @@ dsh plugin --profile web add file:/path/to/dsh-groq-speech/release
 Reload the Web GUI after installing. If the **Settings → Groq Speech** section
 or the microphone provider is missing, restart `dsh web`.
 
+Installing the plugin does not change the voice-input selection: the official
+bundle keeps its own default (SenseVoiceSmall). After the first install, open
+**Settings → Groq Speech** and press **Use Groq Whisper** next to **Voice input
+provider**, or choose **Groq Whisper** under **Recognition service** in the
+voice-input plugin settings. Until then the microphone asks to download local
+recognition models.
+
 ## Configuring the key
 
 1. Open **Settings → Models**.
@@ -63,6 +72,20 @@ or the microphone provider is missing, restart `dsh web`.
 
 The plugin stores no copy of the key and cannot set or clear it. The key from
 Models is used both for Whisper transcription and for Groq models.
+
+## Voice input provider
+
+The official voice-input bundle stores the selected recognition service per
+profile and defaults to SenseVoiceSmall. **Settings → Groq Speech** reports the
+current choice as **Selected**, **Not selected** or **Not detected** and offers:
+
+- **Use Groq Whisper** — switches the selection immediately through the
+  official speech service (persisted in the profile patch).
+- **Voice input settings** — opens the official plugin details, where
+  **Recognition service** and **Recognition language** can be changed.
+
+The plugin never switches the provider on install and never switches it back on
+uninstall; the choice belongs to the profile.
 
 ## Recognition settings
 
@@ -95,8 +118,9 @@ lost.
   `~/.dsh/dsh-groq-speech/groq-speech.json`). A 0.1.0 file at
   `$DSH_HOME/groq-speech.json` is read as a one-time fallback and is never
   modified.
-- The browser receives only `{ configured, source, writable }` plus the
-  non-secret settings. The key, its prefix and its length are never returned.
+- The browser receives only `{ configured, source, writable }`, the non-secret
+  settings and the current voice-input provider selection. The key, its prefix
+  and its length are never returned.
 - The plugin has no API actions to set or clear the key: the Groq Speech page
   shows a **Configured** / **Not configured** badge and links to Models.
 - The `GROQ_API_KEY` environment variable is a read-only fallback; a stored key
@@ -118,6 +142,11 @@ lost.
 The voice-input microphone picker shows **Groq Whisper** marked `cloud`. There is
 no preparation (model download) step; the provider is ready immediately.
 
+The selection is per profile and is not changed automatically by install. If the
+microphone asks to download local models, press **Use Groq Whisper** in
+**Settings → Groq Speech** or pick **Groq Whisper** under **Recognition
+service** in the voice-input plugin settings.
+
 ## Troubleshooting
 
 | Symptom | What to do |
@@ -127,6 +156,7 @@ no preparation (model download) step; the provider is ready immediately.
 | `Groq rate limit reached` (429) | The Groq quota is exhausted. Wait or check the plan and limits in the Groq console. |
 | `Groq is unavailable` (5xx) | Groq-side failure; retry later. |
 | `Could not reach Groq` | No network, DNS failure, or a proxy blocking `api.groq.com`. |
+| Microphone asks to download local recognition models | The official voice-input bundle still selects a local provider. Open **Settings → Groq Speech** and press **Use Groq Whisper**, or choose **Groq Whisper** under **Recognition service** in the voice-input settings. |
 | Provider missing from the microphone picker | Enable the official voice-input bundle, make sure the plugin is added to the `web` profile, and restart DSH. |
 | No Settings → Groq Speech section | Reload the page with the cache cleared; if that does not help, restart DSH. |
 | Polishing does not run | Select a provider and model under Polish; settings save automatically. Any failure keeps the raw text. |
@@ -174,6 +204,7 @@ dsh-groq-speech/
 │   ├── groq.ts           Groq multipart request and error mapping
 │   ├── polish.ts         optional LLM polishing with fallback
 │   ├── provider.ts       the `groq-whisper` SpeechProvider
+│   ├── voiceInput.ts     official voice-input selection status and switch
 │   ├── api.ts            browser JSON API
 │   ├── uninstall.ts      post-uninstall data cleanup
 │   ├── index.ts          host plugin entry
