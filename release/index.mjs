@@ -1,4 +1,3 @@
-import "./_virtual/_rollup-plugin-process-env.mjs";
 import { createApiHandler } from "./api.mjs";
 import { API_PREFIX } from "./constants.mjs";
 import { buildTrustedHosts } from "./fence.mjs";

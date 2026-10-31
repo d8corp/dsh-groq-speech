@@ -165,8 +165,6 @@ dsh-groq-speech/
 ├── cordis.patch.yml      adds the plugin to the web profile
 ├── theme.scss            settings-section styles (inlined at build time)
 ├── buildEnv.ts           compiles theme.scss into .env.theme
-├── scripts/
-│   └── buildClient.mjs   builds client/client.js with this plugin's CSS
 ├── src/
 │   ├── constants.ts      shared constants
 │   ├── contracts.ts      host/UI type shapes

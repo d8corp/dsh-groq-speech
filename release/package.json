@@ -8,6 +8,7 @@
   "exports": {
     ".": "./index.mjs",
     "./client": "./client/client.js",
+    "./locale/*.json": "./locale/*.json",
     "./package.json": "./package.json"
   },
   "author": "Mikhail Lysikov <d8corp@mail.ru>",
@@ -33,7 +34,7 @@
   },
   "scripts": {
     "build": "npm run build:theme && npm run build:client && innetjs release -tc -lc -e",
-    "build:client": "node scripts/buildClient.mjs",
+    "build:client": "innetjs build -i client -tc -lc -e",
     "build:theme": "innetjs run buildEnv.ts -e",
     "release": "npm run build:theme && npm run build:client && innetjs release -p -tc -lc -e",
     "test": "jest",
