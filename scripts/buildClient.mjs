@@ -11,7 +11,7 @@ import { existsSync, readFileSync } from 'node:fs'
 
 import * as dotenv from 'dotenv'
 
-const ENV_PREFIX = 'INNETJS_GROQ_SPEECH_'
+const ENV_PREFIX = 'DSH_PLUGIN_GROQ_SPEECH_'
 const CSS_KEY = `${ENV_PREFIX}CSS`
 const env = { ...process.env }
 
