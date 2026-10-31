@@ -4,6 +4,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 
 import { Settings } from './components'
+import { PROVIDER_NAME } from './constants'
 import { ensureStyles } from './utils'
 
 const PLUGIN_ID = 'dsh-groq-speech'
@@ -13,7 +14,7 @@ const SECTION = {
   name: 'settings.section',
   id: 'groq-speech',
   order: 30,
-  label: 'Groq Speech',
+  label: PROVIDER_NAME,
 } as const
 
 export const inject = ['slots']

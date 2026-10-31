@@ -6,7 +6,7 @@ import type { GroqSpeechSettings, WhisperModel } from './contracts'
 export const PROVIDER_ID = 'groq-whisper'
 
 /** Provider display name shown in the official voice-input picker. */
-export const PROVIDER_NAME = 'Groq Whisper'
+export const PROVIDER_NAME = 'Groq Speech'
 
 /** Same-origin browser API prefix. */
 export const API_PREFIX = '/groq-speech/api'
