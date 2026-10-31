@@ -3,7 +3,7 @@ import type { GroqSpeechSettings, WhisperModel } from './contracts';
 /** Provider id registered into ctx.speechToText. */
 export declare const PROVIDER_ID = "groq-whisper";
 /** Provider display name shown in the official voice-input picker. */
-export declare const PROVIDER_NAME = "Groq Whisper";
+export declare const PROVIDER_NAME = "Groq Speech";
 /** Same-origin browser API prefix. */
 export declare const API_PREFIX = "/groq-speech/api";
 /** Credential reference used for the Groq key (stored value outranks env). */

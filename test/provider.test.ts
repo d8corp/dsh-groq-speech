@@ -9,7 +9,7 @@
 
 import assert from 'node:assert/strict'
 
-import { LANGUAGES } from '../src/constants'
+import { LANGUAGES, PROVIDER_NAME } from '../src/constants'
 import type { GroqSpeechSettings } from '../src/contracts'
 import {
   credentialSource,
@@ -36,7 +36,7 @@ test('provider info advertises groq-whisper in the cloud with no preparation', (
 
   assert.deepEqual(Object.keys(provider.info).sort(), ['id', 'languages', 'location', 'name'])
   assert.equal(provider.info.id, 'groq-whisper')
-  assert.equal(provider.info.name, 'Groq Whisper')
+  assert.equal(provider.info.name, PROVIDER_NAME)
   assert.equal(provider.info.location, 'cloud')
   assert.deepEqual(provider.info.languages, LANGUAGES)
   assert.equal('preparation' in provider.info, false)

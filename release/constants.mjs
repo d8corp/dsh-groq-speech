@@ -2,7 +2,7 @@
 /** Provider id registered into ctx.speechToText. */
 const PROVIDER_ID = "groq-whisper";
 /** Provider display name shown in the official voice-input picker. */
-const PROVIDER_NAME = "Groq Whisper";
+const PROVIDER_NAME = "Groq Speech";
 /** Same-origin browser API prefix. */
 const API_PREFIX = "/groq-speech/api";
 /** Credential reference used for the Groq key (stored value outranks env). */
