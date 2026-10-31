@@ -7,8 +7,9 @@ import * as sass from 'sass'
 
 const INPUT_SCSS = 'theme.scss'
 const OUTPUT_ENV = '.env.theme'
-// innetjs only exposes INNETJS_-prefixed variables to the client bundle.
-const CSS_KEY = 'INNETJS_CSS'
+// Must start with INNETJS_ENV_PREFIX from .env, which innetjs uses to select
+// the host variables exposed to the client bundle.
+const CSS_KEY = 'INNETJS_GROQ_SPEECH_CSS'
 
 const minifier = postcss([cssnano({ preset: 'default' })])
 
@@ -30,6 +31,7 @@ async function generateEnvFromScss () {
   const minified = (await minifier.process(css, { from: undefined })).css
 
   const existing = readEnv(OUTPUT_ENV)
+  delete existing.INNETJS_CSS
   const added = CSS_KEY in existing ? 0 : 1
   const updated = CSS_KEY in existing && existing[CSS_KEY] !== minified ? 1 : 0
 

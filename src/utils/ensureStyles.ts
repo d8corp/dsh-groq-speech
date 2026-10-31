@@ -1,8 +1,8 @@
 /**
  * Inject the section stylesheet once per document.
  *
- * `INNETJS_CSS` is replaced at build time with the minified `theme.scss`
- * output, so the module has no runtime stylesheet request.
+ * `INNETJS_GROQ_SPEECH_CSS` is replaced at build time with the minified
+ * `theme.scss` output, so the module has no runtime stylesheet request.
  *
  * @param id plugin id used as the style tag marker.
  */
@@ -13,6 +13,6 @@ export function ensureStyles (id: string): void {
   const tag = document.createElement('style')
 
   tag.dataset.plugin = id
-  tag.textContent = import.meta.env.INNETJS_CSS || ''
+  tag.textContent = import.meta.env.INNETJS_GROQ_SPEECH_CSS || ''
   document.head.appendChild(tag)
 }
