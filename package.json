@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "description": "Groq Whisper recognizer for DSH voice input, with optional LLM polish and key management via Settings → Models.",
+  "icon": "./icon.png",
   "type": "module",
   "main": "index.mjs",
   "types": "index.d.ts",

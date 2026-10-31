@@ -192,6 +192,7 @@ npm run lint         # ESLint over src/
 ```
 dsh-groq-speech/
 ├── package.json          plugin manifest and build scripts
+├── icon.png              plugin artwork shown in the Plugins list
 ├── cordis.patch.yml      adds the plugin to the web profile
 ├── theme.scss            settings-section styles (inlined at build time)
 ├── buildEnv.ts           compiles theme.scss into .env.theme

@@ -7,7 +7,7 @@
  */
 
 import assert from 'node:assert/strict'
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { API_PREFIX, PACKAGE_NAME } from '../src/constants'
@@ -18,6 +18,19 @@ import { createFakeCtx } from './helpers/fake-ctx'
 test('entry exports the documented identity and injected services', () => {
   assert.equal(name, 'groq-speech')
   assert.deepEqual(inject, ['speechToText', 'webServer', 'webStartup', 'credentials', 'llm'])
+})
+
+test('package manifest declares an icon the plugin manager can read', () => {
+  const root = process.cwd()
+  const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { icon?: unknown }
+
+  assert.equal(manifest.icon, './icon.png')
+
+  const stat = statSync(join(root, String(manifest.icon)))
+
+  assert.equal(stat.isFile(), true)
+  // The DSH plugin manager admits icons up to 256 KiB as a data URL.
+  assert.ok(stat.size > 0 && stat.size <= 256 * 1024)
 })
 
 test('apply registers the provider and the prefix route inside effects', () => {
