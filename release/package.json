@@ -1,6 +1,6 @@
 {
   "name": "dsh-groq-speech",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Groq Whisper recognizer for DSH voice input, with optional LLM polish and key management via Settings → Models.",
   "icon": "./icon.png",
   "type": "module",
